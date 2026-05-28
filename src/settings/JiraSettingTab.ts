@@ -10,6 +10,7 @@ import { debugLog } from '../tools/debugLogging';
 import { CollapsibleSection } from './CollapsibleSection';
 import { useTranslations } from '../localization/translator';
 import { TimekeepSettingsComponent } from './components/TimekeepSettingsComponent';
+import { ProjectSyncsSettings } from './components/ProjectSyncsSettings';
 
 const t = useTranslations('settings').t;
 /**
@@ -24,6 +25,7 @@ export class JiraSettingTab extends PluginSettingTab {
 	private fetchIssue: FetchIssueComponent;
 	private testFieldMappings: TestFieldMappingsComponent;
 	private timekeepSettings: TimekeepSettingsComponent;
+	private projectSyncsSettings: ProjectSyncsSettings;
 
 	constructor(app: App, plugin: JiraPlugin) {
 		super(app, plugin);
@@ -48,6 +50,7 @@ export class JiraSettingTab extends PluginSettingTab {
 		this.fetchIssue.onIssueDataChange = () =>
 			this.testFieldMappings.setCurrentIssue(this.fetchIssue.getCurrentIssue());
 		this.timekeepSettings = new TimekeepSettingsComponent(componentProps);
+		this.projectSyncsSettings = new ProjectSyncsSettings(componentProps);
 	}
 
 	/**
@@ -121,6 +124,15 @@ export class JiraSettingTab extends PluginSettingTab {
 			t('statistics.title'),
 			this.plugin.settings.collapsedSections.statistics,
 			'statistics',
+		).getContentContainer();
+
+		new CollapsibleSection(
+			this.plugin,
+			containerEl,
+			this.projectSyncsSettings,
+			'Project Syncs',
+			this.plugin.settings.collapsedSections.projectSyncs,
+			'projectSyncs',
 		).getContentContainer();
 	}
 

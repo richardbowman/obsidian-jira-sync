@@ -11,7 +11,10 @@ import {
 	registerUpdateIssueStatusCommand,
 	registerBatchFetchIssuesCommand,
 	registerAddCommentCommand,
+	registerSyncProjectCommand,
+	registerSyncAllProjectsCommand,
 } from './commands';
+import { syncProject } from './commands/syncProject';
 import { transform_string_to_functions_mappings } from './tools/convertFunctionString';
 import { createJiraSyncExtension } from './postprocessing/livePreview';
 import { hideJiraPointersReading } from './postprocessing/reading';
@@ -42,6 +45,16 @@ export default class JiraPlugin extends Plugin {
 		registerUpdateWorkLogManuallyCommand(this);
 		registerUpdateWorkLogBatchCommand(this);
 		registerAddCommentCommand(this);
+
+		registerSyncProjectCommand(this);
+		registerSyncAllProjectsCommand(this);
+
+		// Startup project syncs
+		if (this.settings.projectSyncs) {
+			for (const config of this.settings.projectSyncs.filter(c => c.enabled && c.syncOnStartup)) {
+				await syncProject(this, config);
+			}
+		}
 
 		// Add settings tab
 		this.addSettingTab(new JiraSettingTab(this.app, this));

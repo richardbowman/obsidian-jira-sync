@@ -35,6 +35,19 @@ export interface TimekeepSettingsInterface {
 	customDateRange: { start: string; end: string };
 }
 
+export interface ProjectSyncConfig {
+	id: string;               // crypto.randomUUID()
+	name: string;             // Display name e.g. "ARC Project"
+	connectionIndex: number;  // Which connection to use
+	projectKey: string;       // e.g. "ARC"
+	additionalJql: string;    // Optional extra JQL appended after base
+	targetFolder: string;     // e.g. "jira-issues/ARC"
+	lastSyncedAt: string;     // ISO timestamp or ""
+	deltaSync: boolean;       // Append AND updated >= lastSyncedAt
+	syncOnStartup: boolean;
+	enabled: boolean;
+}
+
 export interface CollapsedSections {
 	connection: boolean;
 	general: boolean;
@@ -42,6 +55,7 @@ export interface CollapsedSections {
 	fetchIssue: boolean;
 	testFieldMappings: boolean;
 	statistics: boolean;
+	projectSyncs: boolean;
 }
 
 export interface JiraSettingsInterface {
@@ -53,6 +67,7 @@ export interface JiraSettingsInterface {
 	fieldMapping: FieldMappingSettingsInterface;
 	fetchIssue: FetchIssueInterface;
 	timekeep: TimekeepSettingsInterface;
+	projectSyncs: ProjectSyncConfig[];
 
 	sessionCookieName: string;
 	issueKeyToFilePathCache: Record<string, string>;
@@ -66,6 +81,7 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 		fetchIssue: false,
 		testFieldMappings: false,
 		statistics: false,
+		projectSyncs: false,
 	},
 
 	connections: [
@@ -105,6 +121,8 @@ export const DEFAULT_SETTINGS: JiraSettingsInterface = {
 		maxItemsToShow: 10,
 		customDateRange: { start: '', end: '' },
 	},
+
+	projectSyncs: [],
 
 	sessionCookieName: 'JSESSIONID',
 	issueKeyToFilePathCache: {},
