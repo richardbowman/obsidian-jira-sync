@@ -1,9 +1,8 @@
 import JiraPlugin from '../main';
-import { TFile } from 'obsidian';
-import { createJiraIssue, fetchIssue, updateJiraIssue, updateJiraStatus } from '../api';
+import { Notice, TFile } from 'obsidian';
+import { createJiraIssue, fetchIssue, fetchIssueTransitions, updateJiraIssue, updateJiraStatus } from '../api';
 import { prepareJiraFieldsFromFile } from './commonPrepareData';
 import { localToJiraFields, updateJiraToLocal } from '../tools/mapObsidianJiraFields';
-import { JiraIssue, JiraTransitionType } from '../interfaces';
 import { obsidianJiraFieldMappings } from '../default/obsidianJiraFieldsMapping';
 
 export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Promise<string> {
@@ -15,6 +14,11 @@ export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Prom
 		throw new Error('No issue key found in frontmatter');
 	}
 
+	// Capture desired status before field mapping strips it out (status.toJira returns null)
+	const desiredStatus: string | undefined = fields.status
+		? String(fields.status).trim()
+		: undefined;
+
 	fields = localToJiraFields(
 		fields,
 		{
@@ -24,6 +28,24 @@ export async function updateIssueFromFile(plugin: JiraPlugin, file: TFile): Prom
 		apiVersion,
 	);
 	await updateJiraIssue(plugin, issueKey, fields);
+
+	// Auto-transition status if the frontmatter status field is set
+	if (desiredStatus) {
+		const transitions = await fetchIssueTransitions(plugin, issueKey);
+		const match = transitions.find(
+			(t) => t.status.toLowerCase() === desiredStatus.toLowerCase(),
+		);
+		if (match) {
+			await updateJiraStatus(plugin, issueKey, match.id);
+		} else {
+			new Notice(
+				`No Jira transition found for status "${desiredStatus}" on ${issueKey}. ` +
+				`Available: ${transitions.map((t) => t.status).join(', ')}`,
+				5000,
+			);
+		}
+	}
+
 	return issueKey;
 }
 
@@ -58,22 +80,4 @@ export async function createIssueFromFile(
 	await updateJiraToLocal(plugin, file, createdIssue);
 
 	return issueKey;
-}
-
-export async function updateStatusFromFile(
-	plugin: JiraPlugin,
-	file: TFile,
-	transition: JiraTransitionType,
-): Promise<string> {
-	const fields = await prepareJiraFieldsFromFile(plugin, file);
-
-	if (!fields.key) {
-		throw new Error('No issue key found in frontmatter');
-	}
-
-	await updateJiraStatus(plugin, fields.key, transition.id);
-	await updateJiraToLocal(plugin, file, {
-		fields: { status: { name: transition.status } },
-	} as JiraIssue);
-	return fields.key;
 }

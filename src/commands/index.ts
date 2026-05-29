@@ -5,5 +5,4 @@ export * from './batchFetchIssues';
 export * from './createIssue';
 export * from './getIssue';
 export * from './updateIssue';
-export * from './updateStatus';
 export { registerSyncProjectCommand, registerSyncAllProjectsCommand } from './syncProject';
