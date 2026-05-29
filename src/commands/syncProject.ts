@@ -23,9 +23,15 @@ export async function syncProject(plugin: JiraPlugin, config: ProjectSyncConfig)
 	try {
 		const issues = await fetchIssuesByJQL(plugin, jql);
 		if (issues.length === 0) {
-			new Notice(`${config.name}: No issues found`);
+			const msg = config.deltaSync && config.lastSyncedAt
+				? `${config.name}: Up to date — no changes since last sync`
+				: `${config.name}: No issues found`;
+			config.lastSyncedAt = new Date().toISOString();
+			await plugin.saveSettings();
+			new Notice(msg);
 		} else {
-			let success = 0, errors = 0;
+			let success = 0,
+				errors = 0;
 			for (const issue of issues) {
 				try {
 					// Override the folder: temporarily swap global issuesFolder
@@ -50,7 +56,7 @@ export async function syncProject(plugin: JiraPlugin, config: ProjectSyncConfig)
 }
 
 export async function syncAllProjects(plugin: JiraPlugin): Promise<void> {
-	const configs = plugin.settings.projectSyncs.filter(c => c.enabled);
+	const configs = plugin.settings.projectSyncs.filter((c) => c.enabled);
 	if (configs.length === 0) {
 		new Notice('No project syncs configured');
 		return;
@@ -66,10 +72,10 @@ export function registerSyncProjectCommand(plugin: JiraPlugin): void {
 		name: 'Sync project...',
 		checkCallback: (checking: boolean) => {
 			if (!validateSettings(plugin)) return false;
-			if (plugin.settings.projectSyncs.filter(c => c.enabled).length === 0) return false;
+			if (plugin.settings.projectSyncs.filter((c) => c.enabled).length === 0) return false;
 			if (!checking) {
 				// Simple picker: if only one, run it; otherwise show notice to use settings
-				const configs = plugin.settings.projectSyncs.filter(c => c.enabled);
+				const configs = plugin.settings.projectSyncs.filter((c) => c.enabled);
 				if (configs.length === 1) {
 					syncProject(plugin, configs[0]);
 				} else {
