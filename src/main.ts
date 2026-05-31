@@ -8,7 +8,6 @@ import {
 	registerUpdateWorkLogBatchCommand,
 	registerCreateIssueCommand,
 	registerGetIssueCommandWithCustomKey,
-	registerUpdateIssueStatusCommand,
 	registerBatchFetchIssuesCommand,
 	registerAddCommentCommand,
 	registerSyncProjectCommand,
@@ -36,7 +35,6 @@ export default class JiraPlugin extends Plugin {
 
 		// Register all commands
 		registerUpdateIssueCommand(this);
-		registerUpdateIssueStatusCommand(this);
 		registerGetCurrentIssueCommand(this);
 		registerGetIssueCommandWithCustomKey(this);
 		registerCreateIssueCommand(this);
