@@ -1,5 +1,5 @@
 import JiraPlugin from '../main';
-import { JiraIssue } from '../interfaces';
+import { JiraIssue, SyncItemResult } from '../interfaces';
 import { ensureIssuesFolder } from '../tools/filesUtils';
 import { sanitizeFileName } from '../tools/sanitizers';
 import { updateJiraToLocal } from '../tools/mapObsidianJiraFields';
@@ -37,7 +37,21 @@ function generateFilenameFromTemplate(template: string, issue: JiraIssue): strin
 	return filename.trim();
 }
 
-export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIssue, filePath?: string): Promise<void> {
+/**
+ * Create or update an issue note.
+ *
+ * @param silent - When true, suppresses per-issue Notices and does not open the
+ *                 file in the workspace. Used by batch/sync callers that show
+ *                 their own aggregate results panel.
+ */
+export async function createOrUpdateIssueNote(
+	plugin: JiraPlugin,
+	issue: JiraIssue,
+	filePath?: string,
+	silent = false,
+): Promise<SyncItemResult> {
+	const summary = issue.fields?.summary || '';
+
 	try {
 		await ensureIssuesFolder(plugin);
 
@@ -81,20 +95,32 @@ export async function createOrUpdateIssueNote(plugin: JiraPlugin, issue: JiraIss
 			}
 		}
 
+		const isNew = !targetFile;
+
 		if (targetFile) {
 			await updateJiraToLocal(plugin, targetFile, issue);
-			await plugin.app.workspace.openLinkText(targetFile.path, '');
+			if (!silent) {
+				await plugin.app.workspace.openLinkText(targetFile.path, '');
+				new Notice(`Issue ${issue.key} imported successfully`);
+			}
+			return { key: issue.key, summary, outcome: 'updated', filePath: targetFile.path };
 		} else {
 			const newFile = await createNewIssueFile(plugin, targetPath);
 			await updateJiraToLocal(plugin, newFile, issue);
-			await plugin.app.workspace.openLinkText(newFile.path, '');
-			// Add new file to cache
 			plugin.setFilePathForIssueKey(issue.key, newFile.path);
+			if (!silent) {
+				await plugin.app.workspace.openLinkText(newFile.path, '');
+				new Notice(`Issue ${issue.key} imported successfully`);
+			}
+			return { key: issue.key, summary, outcome: 'new', filePath: newFile.path };
 		}
-		new Notice(`Issue ${issue.key} imported successfully`);
 	} catch (error: unknown) {
-		new Notice('Error creating issue note: ' + ((error as Error).message || 'Unknown error'));
+		const msg = (error as Error).message || 'Unknown error';
+		if (!silent) {
+			new Notice('Error creating issue note: ' + msg);
+		}
 		console.error(error);
+		return { key: issue.key, summary, outcome: 'error', error: msg };
 	}
 }
 

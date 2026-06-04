@@ -1,3 +1,21 @@
+export type SyncOutcome = 'new' | 'updated' | 'error';
+
+export interface SyncItemResult {
+	key: string;
+	summary: string;
+	outcome: SyncOutcome;
+	filePath?: string;
+	error?: string;
+}
+
+export interface SyncReport {
+	projectName: string;
+	jql: string;
+	lastSyncedAt: string;
+	results: SyncItemResult[];
+	deltaSync: boolean;
+}
+
 export interface JiraProject {
 	id: string;
 	name: string;
