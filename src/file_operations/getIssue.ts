@@ -95,8 +95,6 @@ export async function createOrUpdateIssueNote(
 			}
 		}
 
-		const isNew = !targetFile;
-
 		if (targetFile) {
 			await updateJiraToLocal(plugin, targetFile, issue);
 			if (!silent) {
